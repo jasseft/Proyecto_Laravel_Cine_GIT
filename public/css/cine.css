@@ -1,0 +1,21 @@
+.tarjeta {
+    width: 100%; /* Ancho máximo de las tarjetas */
+    max-width: 400px; /* Ancho máximo deseado */
+    margin-bottom: 20px;
+    margin-right: 20px;
+    padding: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    cursor: pointer;
+}
+
+/* Estilos para las imágenes en las tarjetas */
+.tarjeta img {
+    max-width: 100%; /* Ajustar imagen al tamaño máximo de la tarjeta */
+    height: auto; /* Altura automática para mantener la proporción */
+    border-radius: 10px;
+}
+
+
