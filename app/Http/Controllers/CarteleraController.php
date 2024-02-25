@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Pelicula;
-
+use App\Models\Venta;
 
 class CarteleraController extends Controller
 {
@@ -29,6 +29,7 @@ class CarteleraController extends Controller
         $idiomas =  DB::select('CALL getAllIdiomas()'); // Obtener todos los géneros desde la base de datos
         return response()->json($idiomas); // Devolver los géneros en formato JSON
     }
+    
 
     public function obtenerDetallePelicula($id)
     {
@@ -39,8 +40,30 @@ class CarteleraController extends Controller
             // Extrae los datos de la primera fila (asumiendo que solo esperas una fila de resultado)
             $pelicula = $pelicula[0];
 
+            // Pasa los datos de la película a la vista
+            return view('cartelera', [
+                'pelicula' => $pelicula
+            ]);
+        } else {
+            // Maneja el caso en el que no se encontró ninguna película con el ID dado
+            return response()->json(['error' => 'No se encontró ninguna película con el ID proporcionado'], 404);
+        }
+    }
+
+
+
+    public function obtenerDetallePelicula7($id)
+    {
+        $pelicula = DB::select('CALL selectPelicula(?)', [$id]);
+
+        // Verifica si la consulta devuelve algún resultado
+        if (!empty($pelicula)) {
+            // Extrae los datos de la primera fila (asumiendo que solo esperas una fila de resultado)
+            $pelicula = $pelicula[0];
+
             // Construye el array asociativo con los datos de la película
             $datosPelicula = [
+                'id' => $pelicula->PeliculaId,
                 'titulo' => $pelicula->Pelicula_Nombre,
                 'genero' => $pelicula->Genero,
                 'idioma' => $pelicula->Idioma,
@@ -135,5 +158,56 @@ class CarteleraController extends Controller
         }
     }
 
+    public function realizarVenta(Request $request){
+        Log::info('NUEVO_Datos recibidos del formulario:', $request->all());
+
+        // Obtener los parámetros del formulario
+        $peliculaId = $request->input('peliculaId');
+        $precioTotal = $request->input('precioTotal');
+        $precioPagar = $request->input('precioPagar');
+        $cantidad = $request->input('cantidadEntradas');
+
+        // Verificar si el precio a pagar es menor o igual que el precio total
+        if ($precioPagar < $precioTotal) {
+            return response()->json(['success' => false, 'message' => 'Recursos insuficientes.']);
+        }else if ($precioPagar < 0) {
+            return response()->json(['success' => false, 'message' => 'Introduce un pago válido']);
+        }else{
+            $venta = new Venta();
+            $venta->Pelicula_Id = $request->peliculaId;
+            $venta->Cantidad = $request->cantidadEntradas;
+
+            try{
+                $results = DB::select('CALL realizarVenta(?, ?)', [
+                    $venta->Pelicula_Id,
+                    $venta->Cantidad
+                ]);
+                
+                $mensaje = $results[0]->Mensaje;
+    
+            } catch (\Exception $e) {
+                // Si ocurre algún error al ejecutar el procedimiento almacenado, retornar un mensaje de error
+                return response()->json(['success' => false, 'message' => $mensaje]);
+            }
+            $ventas = Venta::all(); // Obtener todas las películas actualizadas
+            return response()->json(['success' => true, 'message' => $mensaje, 'ventas' => $ventas]);
+
+        }
+
+        /*try{
+            $results = DB::select('CALL realizarVenta(?, ?)', [
+                $venta->Pelicula_Id,
+                $venta->Cantidad
+            ]);
+            
+            $mensaje = $results[0]->Mensaje;
+
+        } catch (\Exception $e) {
+            // Si ocurre algún error al ejecutar el procedimiento almacenado, retornar un mensaje de error
+            return response()->json(['success' => false, 'message' => $mensaje]);
+        }
+        $ventas = Venta::all(); // Obtener todas las películas actualizadas
+        return response()->json(['success' => true, 'message' => $mensaje, 'ventas' => $ventas]);*/
+    }
 
 }

@@ -1,3 +1,6 @@
+var precioTotal;
+var cantidad;
+
 function init(){
     obtenerGeneros();
     obtenerIdiomas();
@@ -7,6 +10,35 @@ function init(){
         registroPelicula();   
     })
 
+    $("#btnRealizarVenta").on("click",function(){
+        event.preventDefault(); 
+        registroVenta();   
+    })
+
+}
+
+function obtenerPeliculas(){
+    // Llamada AJAX para obtener los géneros
+    $.ajax({
+        url: '/obtenerPeliculas', // Ruta que apunta a la función en tu controlador que obtiene los géneros
+        type: 'GET',
+        success: function(data) {
+            // Limpiar el select
+            $('#peliculaSelect').empty();
+            // Agregar opciones al select con los datos obtenidos
+            $('#peliculaSelect').append($('<option>', {
+                value: '',
+                text: 'Selecciona una película'
+            }));
+            // Iterar sobre los datos y agregar cada género como una opción en el select
+            $.each(data, function(index, pelicula) {
+                $('#peliculaSelect').append($('<option>', {
+                    value: pelicula.PeliculaId,
+                    text: pelicula.Pelicula_Nombre
+                }));
+            });
+        }
+    });
 }
 
 function obtenerGeneros(){
@@ -57,7 +89,7 @@ function obtenerIdiomas(){
     });
 }
 
-function mostrarDetalles(id) {
+function mostrarDetallesFUNCI(id) {
     // Realizar una solicitud AJAX para obtener los detalles de la película
     $.ajax({
         url: '/obtenerDetallePelicula/' + id,
@@ -76,7 +108,6 @@ function mostrarDetalles(id) {
                     <div><strong>Precio:</strong> ${response.precio}</div>
                     <div><strong>Año:</strong> ${response.año}</div>
                     <div><strong>Cantidad disponible:</strong> ${response.cantidad}</div>
-                    <img src="${response.imagen}" alt="Imagen de la película">
                 `;
 
                 // Actualiza el contenido del modal con los detalles de la película
@@ -101,54 +132,6 @@ function previewImage(event) {
         preview.style.display = 'block'; // Mostrar la imagen previa
     };
     reader.readAsDataURL(event.target.files[0]);
-}
-
-function registroPelicula(){
-    var imagen = $('#imagen')[0].files[0]; // Obtener el archivo de imagen
-    // Verificar si se seleccionó una imagen
-    if (imagen) {
-        // Crear un nuevo objeto FormData para enviar los datos del formulario
-        var formData = new FormData($('#formAgregarPelicula')[0]);
-
-        // Realizar una solicitud AJAX para mover la imagen al directorio deseado
-        $.ajax({
-            url: '/agregarPelicula',
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function(response) {
-                if(response.message==="Película agregada correctamente"){
-                    Swal.fire({
-                        title:response.message,
-                        icon:'success',
-                        confirmButtonText: 'Entendido',
-                        timer:3000,
-                        willClose: () => {
-                            actualizarVista(response.peliculas);
-                            $('#modalAgregarPelicula').modal('hide');
-                            LimpiarModal();
-                        }
-                    })
-
-                }else{
-                    Swal.fire({
-                        title:response.message,
-                        icon:'error',
-                        confirmButtonText: 'Entendido',
-                         
-                    })
-                }
-            }
-        });
-    } else {
-        Swal.fire({
-            title:'Por favor, selecciona una imágen',
-            icon:'error',
-            confirmButtonText: 'Entendido',
-             
-        })
-    }
 }
 
 function moverImagen(){
@@ -234,6 +217,170 @@ function LimpiarModal() {
     $('#imagen').val('');
     $('#previewImagen').attr('src', '').hide(); // Ocultar la vista previa de la imagen
 }
+
+function LimpiarModalVenta() {
+    $('#cantidadEntradas').val('');
+    $('#precioPagar').val('');
+}
+
+function mostrarDetalles(id) {
+    // Realizar una solicitud AJAX para obtener los detalles de la película
+    $.ajax({
+        url: '/obtenerDetallePelicula/' + id,
+        type: 'GET',
+        success: function(response) {
+            // Verifica si la respuesta contiene datos de la película
+            if (response.error) {
+                // Maneja el caso en el que ocurrió un error al obtener los detalles de la película
+                console.error(response.error);
+            } else {
+
+                // Muestra el modal
+                $('#modalDetallesPelicula').modal('show');
+                document.getElementById('precioPagar').disabled = true;
+            }
+        },
+        error: function(xhr, status, error) {
+            // Maneja el caso en el que ocurrió un error durante la solicitud AJAX
+            console.error(error);
+        }
+    });
+}
+
+function calcularPrecio(precio) {
+    // Obtener la cantidad de entradas ingresadas por el usuario
+    var cantidadEntradas = parseInt(document.getElementById('cantidadEntradas').value);
+    var campoPagarCon = document.getElementById('precioPagar');
+
+    if (!isNaN(cantidadEntradas) && cantidadEntradas >= 0) {
+        precioTotal = precio * cantidadEntradas;
+        document.getElementById('totalPagar').innerHTML = 'Total a pagar: $' + precioTotal.toFixed(2);
+        campoPagarCon.disabled = false;
+        campoPagarCon.setAttribute('min', precioTotal);
+    } else {
+        document.getElementById('totalPagar').innerHTML = 'Cantidad de entradas inválida';
+        document.getElementById('cantidadEntradas').value = '';
+        campoPagarCon.disabled = true;
+    }
+}
+
+function registroPelicula(){
+    var imagen = $('#imagen')[0].files[0]; // Obtener el archivo de imagen
+    // Verificar si se seleccionó una imagen
+    if (imagen) {
+        // Crear un nuevo objeto FormData para enviar los datos del formulario
+        var formData = new FormData($('#formAgregarPelicula')[0]);
+
+        // Realizar una solicitud AJAX para mover la imagen al directorio deseado
+        $.ajax({
+            url: '/agregarPelicula',
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                if(response.message==="Película agregada correctamente"){
+                    Swal.fire({
+                        title:response.message,
+                        icon:'success',
+                        confirmButtonText: 'Entendido',
+                        timer:3000,
+                        willClose: () => {
+                            actualizarVista(response.peliculas);
+                            $('#modalAgregarPelicula').modal('hide');
+                            LimpiarModal();
+                        }
+                    })
+
+                }else{
+                    Swal.fire({
+                        title:response.message,
+                        icon:'error',
+                        confirmButtonText: 'Entendido',
+                         
+                    })
+                }
+            }
+        });
+    } else {
+        Swal.fire({
+            title:'Por favor, selecciona una imágen',
+            icon:'error',
+            confirmButtonText: 'Entendido',
+             
+        })
+    }
+}
+
+function registroVenta(){
+    var formData = new FormData($('#formVentaPelicula')[0]);
+    formData.append('precioTotal', precioTotal);
+     // Recorrer todas las entradas del formulario
+     /*for (var entry of formData.entries()) {
+        console.log(entry[0] + ": " + entry[1]); // Imprimir el nombre y el valor de cada entrada
+    }*/
+
+    // Realizar una solicitud AJAX 
+    $.ajax({
+        url: '/realizarVenta',
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function(response) {
+            if(response.message === "Venta realizada exitosamente."){
+                Swal.fire({
+                    title:response.message,
+                    icon:'success',
+                    confirmButtonText: 'Entendido',
+                    timer:3000,
+                    willClose: () => {
+                        $('#modalDetallesPelicula').modal('hide');
+                        LimpiarModalVenta();
+                        // Recargar la página después de 3 segundos
+                        setTimeout(function() {
+                            location.reload();
+                        }, 2000);
+                    }
+                })
+
+            }else if(response.message === "¡Error! Stock insuficiente para realizar la venta."){
+                Swal.fire({
+                    title:response.message,
+                    icon:'error',
+                    confirmButtonText: 'Entendido',
+                    timer:3000,
+                    willClose: () => {
+                        $('#modalDetallesPelicula').modal('hide');
+                        LimpiarModalVenta();
+                    }
+                })
+
+            }else if(response.message === "¡Error! La película no existe."){
+                Swal.fire({
+                    title:response.message,
+                    icon:'error',
+                    confirmButtonText: 'Entendido',
+                    timer:3000,
+                    willClose: () => {
+                        $('#modalDetallesPelicula').modal('hide');
+                        LimpiarModalVenta();
+                    }
+                })
+
+            }else{
+                Swal.fire({
+                    title:response.message,
+                    icon:'error',
+                    confirmButtonText: 'Entendido',
+                    timer:3000
+                })
+            }
+
+        }
+    });
+}
+
 
 init();
 

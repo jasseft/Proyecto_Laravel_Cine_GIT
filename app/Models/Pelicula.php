@@ -18,6 +18,7 @@ class Pelicula extends Model
 
     // Especifica los campos que se pueden asignar masivamente
     protected $fillable = [
+        'PeliculaId',
         'Pelicula_Nombre',
         'Pelicula_GeneroId',
         'Pelicula_IdiomaId',

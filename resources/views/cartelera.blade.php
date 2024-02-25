@@ -48,7 +48,6 @@
         @endif
     </div>
 
-    
     <!-- Modal para agregar película -->
     <div class="modal fade" id="modalAgregarPelicula" tabindex="-1" role="dialog" aria-labelledby="modalAgregarPeliculaLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -130,7 +129,28 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <!-- Aquí se mostrarán los detalles de la película -->
+                    <form id="formVentaPelicula" method="POST">
+                        @csrf
+                        <div><strong>ID:</strong> {{ $pelicula->PeliculaId }}</div>
+                        <div><strong>Título:</strong> {{ $pelicula->Pelicula_Nombre }}</div>
+                        <div><strong>Género:</strong> {{ $pelicula->Genero }}</div>
+                        <div><strong>Idioma:</strong> {{ $pelicula->Idioma }}</div>
+                        <div><strong>Precio:</strong> {{ $pelicula->Pelicula_Precio }}</div>
+                        <div><strong>Año:</strong> {{ $pelicula->Pelicula_Year }}</div>
+                        <div><strong>Cantidad disponible:</strong> {{ $pelicula->Pelicula_Cantidad }}</div>
+                        <input type="hidden" id="peliculaId" name="peliculaId" value="{{ $pelicula->PeliculaId }}">
+                        <div class="form-group">
+                            <label for="cantidad">Entradas</label>
+                            <input type="number" class="form-control" id="cantidadEntradas" name="cantidadEntradas" min="0">
+                        </div>
+                        <button type="button" class="btn btn-primary" id="btnCalcularPrecio" onclick="calcularPrecio({{ $pelicula->Pelicula_Precio }})" >Calcular Precio</button><br>
+                        <div id="totalPagar"></div><br>
+                        <div class="form-group">
+                            <label for="precio">Pagar con:</label>
+                            <input type="number" class="form-control" id="precioPagar" name="precioPagar" min="{{ $pelicula->Pelicula_Precio }}">
+                        </div>
+                        <button type="submit" class="btn btn-success" id="btnRealizarVenta">Comprar</button><br>
+                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
